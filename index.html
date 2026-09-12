@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Procuração — Gabriel Leme Rocha Advocacia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1f2a38;
+    --ink-soft:#3d4a5c;
+    --paper:#fffdf8;
+    --paper-edge:#f1ece0;
+    --bg:#eae4d6;
+    --bg-panel:#f4f0e6;
+    --oxblood:#6e2a34;
+    --oxblood-dark:#57212a;
+    --muted:#7a7466;
+    --line:#d9d2c0;
+    --line-strong:#c7bea7;
+    --ok:#3d6b4f;
+    --serif: Georgia, "Times New Roman", Times, "Liberation Serif", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background:var(--ink);
+    color:#f4f0e6;
+    padding:22px 28px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:6px;
+    border-bottom:3px solid var(--oxblood);
+  }
+  .topbar h1{
+    font-family:var(--serif);
+    font-size:1.35rem;
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  .topbar .office{
+    font-size:0.82rem;
+    color:#c9c2b0;
+  }
+
+  /* ---------- Layout ---------- */
+  .workspace{
+    display:grid;
+    grid-template-columns:400px 1fr;
+    gap:0;
+    min-height:calc(100vh - 74px);
+  }
+  @media (max-width:920px){
+    .workspace{grid-template-columns:1fr;}
+  }
+
+  /* ---------- Form panel ---------- */
+  .panel-form{
+    background:var(--bg-panel);
+    border-right:1px solid var(--line-strong);
+    padding:26px 26px 100px;
+    overflow-y:auto;
+  }
+  fieldset{
+    border:none;
+    margin:0 0 28px;
+    padding:0;
+  }
+  legend{
+    font-family:var(--serif);
+    font-size:1rem;
+    font-weight:700;
+    color:var(--oxblood-dark);
+    padding:0 0 8px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line-strong);
+    width:100%;
+    display:block;
+  }
+  .field{
+    margin-bottom:14px;
+  }
+  .field label{
+    display:block;
+    font-size:0.76rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    text-transform:none;
+  }
+  .field label .req{
+    color:var(--oxblood);
+    margin-left:2px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:9px 11px;
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    background:#fff;
+    font-size:0.92rem;
+    font-family:var(--sans);
+    color:var(--ink);
+  }
+  .field input::placeholder{
+    color:#a39d8c;
+    font-style:italic;
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--oxblood);
+    box-shadow:0 0 0 3px rgba(110,42,52,0.12);
+  }
+  .field.mono input{font-family:var(--mono); letter-spacing:0.02em;}
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .field-row3{
+    display:grid;
+    grid-template-columns:1.4fr 1.6fr 1fr;
+    gap:10px;
+  }
+
+  .fieldset-note{
+    font-size:0.76rem;
+    color:var(--muted);
+    margin:-6px 0 12px;
+    line-height:1.4;
+  }
+  .custom-field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:8px;
+    margin-bottom:10px;
+    align-items:center;
+  }
+  .custom-field-row input{
+    padding:9px 11px;
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    background:#fff;
+    font-size:0.92rem;
+    font-family:var(--sans);
+    color:var(--ink);
+    width:100%;
+  }
+  .custom-field-row input:focus{
+    outline:none;
+    border-color:var(--oxblood);
+    box-shadow:0 0 0 3px rgba(110,42,52,0.12);
+  }
+  .cf-remove{
+    background:none;
+    border:1px solid var(--line-strong);
+    color:var(--muted);
+    width:32px;
+    height:32px;
+    border-radius:3px;
+    cursor:pointer;
+    font-size:1rem;
+    line-height:1;
+  }
+  .cf-remove:hover{border-color:var(--oxblood); color:var(--oxblood-dark);}
+
+  .quickfill{
+    background:none;
+    border:1px dashed var(--line-strong);
+    color:var(--ink-soft);
+    font-size:0.78rem;
+    padding:7px 12px;
+    border-radius:3px;
+    cursor:pointer;
+    margin-bottom:14px;
+    width:100%;
+    text-align:left;
+    font-family:var(--sans);
+  }
+  .quickfill:hover{border-color:var(--oxblood); color:var(--oxblood-dark);}
+
+  .actions{
+    position:sticky;
+    bottom:0;
+    background:var(--bg-panel);
+    padding-top:14px;
+    margin-top:8px;
+    border-top:1px solid var(--line-strong);
+  }
+  .btn{
+    display:block;
+    width:100%;
+    padding:13px 16px;
+    border-radius:3px;
+    border:none;
+    font-size:0.95rem;
+    font-weight:600;
+    font-family:var(--sans);
+    cursor:pointer;
+    text-align:center;
+  }
+  .btn-primary{
+    background:var(--oxblood);
+    color:#fff;
+    margin-bottom:9px;
+  }
+  .btn-primary:hover{background:var(--oxblood-dark);}
+  .btn-secondary{
+    background:none;
+    color:var(--ink-soft);
+    border:1px solid var(--line-strong);
+  }
+  .btn-secondary:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .hint{
+    font-size:0.74rem;
+    color:var(--muted);
+    margin-top:8px;
+    line-height:1.4;
+  }
+  .hint.warn{color:var(--oxblood-dark);}
+
+  /* ---------- Preview panel ---------- */
+  .panel-preview{
+    background:var(--bg);
+    padding:36px;
+    display:flex;
+    justify-content:center;
+    overflow-y:auto;
+  }
+  .paper{
+    background:var(--paper);
+    width:100%;
+    max-width:720px;
+    min-height:960px;
+    padding:70px 64px;
+    box-shadow:0 1px 2px rgba(31,42,56,0.08), 0 18px 40px -12px rgba(31,42,56,0.35);
+    font-family:var(--serif);
+    color:#20242a;
+    font-size:14px;
+    line-height:1.65;
+  }
+  .doc-title{
+    text-align:center;
+    font-weight:700;
+    font-size:1.2rem;
+    letter-spacing:0.01em;
+    margin:0 0 4px;
+  }
+  .doc-subtitle{
+    text-align:center;
+    font-style:italic;
+    font-size:0.95rem;
+    margin:0 0 28px;
+    color:#3a3f47;
+  }
+  .doc-p{
+    text-align:justify;
+    margin:0 0 20px;
+  }
+  .doc-center{
+    text-align:center;
+    margin:0 0 6px;
+  }
+  .doc-space{height:26px;}
+  .doc-footnote{
+    text-align:justify;
+    font-size:10px;
+    line-height:1.5;
+    color:#6b6558;
+    font-style:italic;
+    margin-top:56px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  b{font-weight:700;}
+
+  /* Mobile tabs */
+  .mobile-tabs{
+    display:none;
+    background:var(--bg-panel);
+    border-bottom:1px solid var(--line-strong);
+  }
+  .mobile-tabs button{
+    flex:1;
+    padding:13px;
+    background:none;
+    border:none;
+    font-family:var(--sans);
+    font-size:0.88rem;
+    font-weight:600;
+    color:var(--muted);
+    border-bottom:3px solid transparent;
+    cursor:pointer;
+  }
+  .mobile-tabs button.active{
+    color:var(--oxblood-dark);
+    border-bottom-color:var(--oxblood);
+  }
+  @media (max-width:920px){
+    .mobile-tabs{display:flex;}
+    .panel-form, .panel-preview{display:none;}
+    .panel-form.show, .panel-preview.show{display:block;}
+    .panel-preview.show{display:flex;}
+    .panel-form{border-right:none;}
+    .paper{padding:40px 26px; min-height:auto;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Gerador de Procuração</h1>
+  <span class="office">Gabriel Leme Rocha Advocacia · Macatuba/SP</span>
+</div>
+
+<div class="mobile-tabs">
+  <button id="tabFormBtn" class="active">Formulário</button>
+  <button id="tabPreviewBtn">Documento</button>
+</div>
+
+<div class="workspace">
+
+  <section class="panel-form show" id="panelForm">
+
+    <fieldset>
+      <legend>Dados do outorgante</legend>
+
+      <div class="field">
+        <label for="nome">Nome completo <span class="req">*</span></label>
+        <input id="nome" placeholder="nome da pessoa" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="genero">Concordância de gênero ("residente e domiciliado/a")</label>
+        <select id="genero">
+          <option value="feminino">Feminino — domiciliada</option>
+          <option value="masculino">Masculino — domiciliado</option>
+        </select>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="nacionalidade">Nacionalidade</label>
+          <input id="nacionalidade" list="nacionalidadeList" placeholder="nacionalidade" autocomplete="off">
+          <datalist id="nacionalidadeList">
+            <option value="brasileiro">
+            <option value="brasileira">
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="estadoCivil">Estado civil</label>
+          <input id="estadoCivil" list="estadoCivilList" placeholder="estado civil" autocomplete="off">
+          <datalist id="estadoCivilList">
+            <option value="solteiro">
+            <option value="solteira">
+            <option value="casado">
+            <option value="casada">
+            <option value="divorciado">
+            <option value="divorciada">
+            <option value="viúvo">
+            <option value="viúva">
+            <option value="união estável">
+          </datalist>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field mono">
+          <label for="rg">RG</label>
+          <input id="rg" placeholder="número do rg" autocomplete="off">
+        </div>
+        <div class="field mono">
+          <label for="cpf">CPF</label>
+          <input id="cpf" placeholder="número do cpf" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field-row3">
+        <div class="field">
+          <label for="rua">Rua / logradouro</label>
+          <input id="rua" placeholder="rua" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="numero">Número</label>
+          <input id="numero" placeholder="número" autocomplete="off">
+        </div>
+        <div class="field mono">
+          <label for="cep">CEP</label>
+          <input id="cep" placeholder="número do cep" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="bairro">Bairro</label>
+          <input id="bairro" placeholder="bairro" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="cidade">Cidade</label>
+          <input id="cidade" placeholder="cidade" autocomplete="off">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Campos adicionais</legend>
+      <p class="fieldset-note">Entram no parágrafo do outorgante, no formato "Rótulo: valor".</p>
+      <div id="customFieldsList"></div>
+      <button type="button" class="quickfill" id="addFieldBtn">+ Adicionar campo</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Local e data</legend>
+
+      <button type="button" class="quickfill" id="quickfillDate">Preencher com Macatuba/SP e a data de hoje</button>
+
+      <div class="field">
+        <label for="local">Local</label>
+        <input id="local" placeholder="Local" autocomplete="off">
+      </div>
+      <div class="field-row3">
+        <div class="field">
+          <label for="dia">Dia</label>
+          <input id="dia" placeholder="dia" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="mes">Mês</label>
+          <input id="mes" placeholder="mês" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="ano">Ano</label>
+          <input id="ano" placeholder="ano" autocomplete="off">
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="downloadBtn">Baixar PDF</button>
+      <button type="button" class="btn btn-secondary" id="clearBtn">Limpar formulário</button>
+      <div class="hint" id="validationHint"></div>
+    </div>
+
+  </section>
+
+  <section class="panel-preview" id="panelPreview">
+    <div class="paper" id="paper"></div>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   MODELO DE DOCUMENTO — Procuração "ad et extra judicia"
+   Reconstrói o texto do modelo Word original, mantendo fixo tudo
+   que não estava grifado de amarelo, e tratando os campos grifados
+   como opcionais: se um campo não for preenchido, ele (e a pontuação
+   que o introduz) simplesmente não aparece no texto final.
+   ============================================================ */
+
+var FIRM = {
+  advogado: "Gabriel Leme Rocha",
+  qualificacao: "OAB/SP nº 487.487 e CPF nº 448.319.148-94, brasileiro, advogado, com escritório profissional na rua Isaura Andrade Monte, nº 209, Jd. Planalto, CEP 17293-044, na cidade de Macatuba/SP."
+};
+
+var PODERES_TEXTO =
+  ': Os da cláusula "ad et extra judicia", para o foro em geral, podendo agir em conjunto ou isoladamente, ' +
+  'independentemente da ordem de nomeação e mais o de propor contra quem de direito as ações competentes e ' +
+  'defendê-lo(s) nas contrárias, seguindo umas e outras até final decisão, usando dos recursos legais e ' +
+  'acompanhando-os, conferindo-lhe(s), ainda, poderes especiais para: representar o outorgante para transigir, ' +
+  'inclusive em audiência, conforme artigo 334, parágrafo 10, do CPC, confessar, desistir, renunciar, transigir, ' +
+  'firmar compromissos ou acordos, assinar termos de adjudicação, de caução e de penhora, declarações, receber, ' +
+  'pagar, dar quitação, levantar depósitos judiciais, passar recibos, substabelecer com ou sem reservas de iguais ' +
+  'poderes, dando tudo por bom, firme e valioso.';
+
+var FOOTNOTE_TEXTO =
+  '(Com base no § 1º do artigo 105 do CPC e nos termos da Lei nº 13.874/19, bem como na Medida Provisória ' +
+  'nº 2.200-2/01, no Decreto nº 10.278/20, e, ainda, no Enunciado nº 297 do Conselho Nacional de Justiça, ' +
+  'poderá este documento ser assinados digitalmente. Para este fim, serão utilizados os serviços disponíveis ' +
+  'no mercado e amplamente utilizados que possibilitam a segurança, validade jurídica, autenticidade, ' +
+  'integridade e validade da assinatura eletrônica por meio de sistemas de certificação digital capazes de ' +
+  'validar a autoria, bem como de traçar a "trilha de auditoria digital" (cadeia de custódia) do documento, ' +
+  'a fim de verificar sua integridade e autenticidade).';
+
+function val(d, key) {
+  return (d[key] || '').trim();
+}
+
+// A segment's text either comes from d[seg.key] or, for synthetic segments
+// (like custom fields), directly from seg.value.
+function segVal(d, seg) {
+  if (seg.value !== undefined) return (seg.value || '').trim();
+  return val(d, seg.key);
+}
+
+// Builds a run list from an ordered list of {key|value, prefix, bold} segments,
+// dropping any segment whose text is empty, and stripping a leading
+// ", " from whichever segment ends up first once empties are removed.
+function buildOptionalRuns(d, leadLabel, leadBold, segments, trailing) {
+  var filled = segments.filter(function (s) { return segVal(d, s) !== ''; });
+  var runs = [];
+  if (leadLabel) runs.push({ text: leadLabel, bold: leadBold });
+  filled.forEach(function (seg, idx) {
+    var prefix = seg.prefix;
+    if (idx === 0) prefix = prefix.replace(/^,\s*/, '');
+    if (prefix) runs.push({ text: prefix, bold: false });
+    runs.push({ text: segVal(d, seg), bold: !!seg.bold });
+  });
+  if (trailing) runs.push({ text: trailing, bold: false });
+  return runs;
+}
+
+function buildOutorganteRuns(d) {
+  // "residente e domiciliado/a" — grammatical gender, feminine by default
+  // (matches the original template) unless masculino is chosen.
+  var generoSufixo = d.genero === 'masculino' ? 'o' : 'a';
+
+  var segments = [
+    { key: 'nome', prefix: '', bold: true },
+    { key: 'nacionalidade', prefix: ', ', bold: false },
+    { key: 'estadoCivil', prefix: ', ', bold: false },
+    { key: 'rg', prefix: ', RG n. ', bold: false },
+    { key: 'cpf', prefix: ', CPF n. ', bold: false },
+    { key: 'rua', prefix: ', residente e domiciliad' + generoSufixo + ' na ', bold: false },
+    { key: 'numero', prefix: ', ', bold: false },
+    { key: 'bairro', prefix: ', ', bold: false },
+    { key: 'cep', prefix: ', CEP n. ', bold: false },
+    { key: 'cidade', prefix: ', na cidade de ', bold: false }
+  ];
+
+  // Custom fields (added by the user in the app) are appended to the same
+  // paragraph, in the order they were added, as "Rótulo: valor" clauses.
+  (d.customFields || []).forEach(function (f) {
+    var label = (f.label || '').trim();
+    var value = (f.value || '').trim();
+    if (label !== '' && value !== '') {
+      segments.push({ value: label + ': ' + value, prefix: ', ', bold: false });
+    }
+  });
+
+  return buildOptionalRuns(d, 'OUTORGANTE: ', true, segments, '.');
+}
+
+function buildOutorgadoRuns() {
+  return [
+    { text: 'OUTORGADO: ', bold: true },
+    { text: FIRM.advogado + ', ', bold: true },
+    { text: FIRM.qualificacao, bold: false }
+  ];
+}
+
+function buildPoderesRuns() {
+  return [
+    { text: 'PODERES', bold: true },
+    { text: PODERES_TEXTO, bold: false }
+  ];
+}
+
+function buildLocalDataRuns(d) {
+  var segments = [
+    { key: 'local', prefix: '' },
+    { key: 'dia', prefix: ', ' },
+    { key: 'mes', prefix: ' de ' },
+    { key: 'ano', prefix: ' de ' }
+  ];
+  return buildOptionalRuns(d, '', false, segments, '');
+}
+
+function buildSignatureNomeRuns(d) {
+  return [
+    { text: 'OUTORGANTE: ', bold: true },
+    { text: val(d, 'nome'), bold: false }
+  ];
+}
+
+function buildSignatureCpfRuns(d) {
+  return [
+    { text: 'CPF: ', bold: true },
+    { text: val(d, 'cpf'), bold: false }
+  ];
+}
+
+// The full document as an ordered list of blocks. Both the HTML preview
+// and the PDF renderer walk this same structure, so they always agree.
+function buildDocumentModel(d) {
+  var blocks = [];
+  blocks.push({ type: 'title', text: 'PROCURAÇÃO' });
+  blocks.push({ type: 'subtitle', text: '"ad et extra judicia"' });
+  blocks.push({ type: 'space' });
+  blocks.push({ type: 'p', align: 'justify', runs: buildOutorganteRuns(d) });
+  blocks.push({ type: 'space' });
+  blocks.push({ type: 'p', align: 'justify', runs: buildOutorgadoRuns() });
+  blocks.push({ type: 'space' });
+  blocks.push({ type: 'p', align: 'justify', runs: buildPoderesRuns() });
+  blocks.push({ type: 'space' });
+  blocks.push({ type: 'space' });
+  blocks.push({ type: 'p', align: 'center', runs: buildLocalDataRuns(d) });
+  blocks.push({ type: 'sigspace' });
+  blocks.push({ type: 'p', align: 'center', runs: [{ text: '____________________________________________', bold: true }] });
+  blocks.push({ type: 'p', align: 'center', runs: buildSignatureNomeRuns(d), tight: true });
+  blocks.push({ type: 'p', align: 'center', runs: buildSignatureCpfRuns(d), tight: true });
+  blocks.push({ type: 'footnote', text: FOOTNOTE_TEXTO });
+  return blocks;
+}
+
+(function () {
+  "use strict";
+
+  var FIELD_IDS = [
+    'nome', 'genero', 'nacionalidade', 'estadoCivil', 'rg', 'cpf',
+    'rua', 'numero', 'bairro', 'cep', 'cidade',
+    'local', 'dia', 'mes', 'ano'
+  ];
+  var STORAGE_KEY = 'procuracao_draft_v1';
+
+  var inputs = {};
+  FIELD_IDS.forEach(function (id) { inputs[id] = document.getElementById(id); });
+
+  var paperEl = document.getElementById('paper');
+  var validationHint = document.getElementById('validationHint');
+  var customFieldsList = document.getElementById('customFieldsList');
+
+  var customFields = [];
+  var customFieldIdCounter = 0;
+
+  function getData() {
+    var d = {};
+    FIELD_IDS.forEach(function (id) { d[id] = inputs[id].value; });
+    d.customFields = customFields.map(function (f) { return { label: f.label, value: f.value }; });
+    return d;
+  }
+
+  /* ---------------- Custom fields (dynamic) ---------------- */
+
+  function renderCustomFields() {
+    customFieldsList.innerHTML = '';
+    customFields.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'custom-field-row';
+
+      var labelInput = document.createElement('input');
+      labelInput.placeholder = 'rótulo (ex.: profissão)';
+      labelInput.value = f.label;
+      labelInput.addEventListener('input', function () { f.label = labelInput.value; onChange(); });
+
+      var valueInput = document.createElement('input');
+      valueInput.placeholder = 'valor (ex.: engenheiro civil)';
+      valueInput.value = f.value;
+      valueInput.addEventListener('input', function () { f.value = valueInput.value; onChange(); });
+
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'cf-remove';
+      removeBtn.textContent = '\u00D7';
+      removeBtn.setAttribute('aria-label', 'Remover campo');
+      removeBtn.addEventListener('click', function () {
+        customFields = customFields.filter(function (x) { return x.id !== f.id; });
+        renderCustomFields();
+        onChange();
+      });
+
+      row.appendChild(labelInput);
+      row.appendChild(valueInput);
+      row.appendChild(removeBtn);
+      customFieldsList.appendChild(row);
+    });
+  }
+
+  function addCustomField(initial) {
+    customFieldIdCounter++;
+    customFields.push({
+      id: 'cf' + customFieldIdCounter,
+      label: (initial && initial.label) || '',
+      value: (initial && initial.value) || ''
+    });
+    renderCustomFields();
+    onChange();
+  }
+
+  function saveDraft() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(getData()));
+    } catch (e) { /* localStorage indisponível — segue sem salvar rascunho */ }
+  }
+
+  function loadDraft() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      FIELD_IDS.forEach(function (id) {
+        if (d[id]) inputs[id].value = d[id];
+      });
+      if (Array.isArray(d.customFields)) {
+        d.customFields.forEach(function (f) { addCustomField(f); });
+      }
+    } catch (e) { /* rascunho corrompido ou indisponível — ignora */ }
+  }
+
+  /* ---------------- HTML preview ---------------- */
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function runsToHtml(runs) {
+    return runs.map(function (r) {
+      var t = escapeHtml(r.text);
+      return r.bold ? '<b>' + t + '</b>' : t;
+    }).join('');
+  }
+
+  function renderPreview() {
+    var data = getData();
+    var blocks = buildDocumentModel(data);
+    var html = '';
+    blocks.forEach(function (b) {
+      if (b.type === 'title') {
+        html += '<p class="doc-title">' + escapeHtml(b.text) + '</p>';
+      } else if (b.type === 'subtitle') {
+        html += '<p class="doc-subtitle">' + escapeHtml(b.text) + '</p>';
+      } else if (b.type === 'space') {
+        html += '<div class="doc-space"></div>';
+      } else if (b.type === 'sigspace') {
+        html += '<div style="height:70px;"></div>';
+      } else if (b.type === 'footnote') {
+        html += '<p class="doc-footnote">' + escapeHtml(b.text) + '</p>';
+      } else if (b.type === 'p') {
+        var cls = 'doc-p';
+        if (b.align === 'center') cls = 'doc-center';
+        html += '<p class="' + cls + '"' + (b.tight ? ' style="margin-bottom:2px;"' : '') + '>' + runsToHtml(b.runs) + '</p>';
+      }
+    });
+    paperEl.innerHTML = html;
+  }
+
+  /* ---------------- Validation hint ---------------- */
+
+  function updateValidation() {
+    if (!inputs.nome.value.trim()) {
+      validationHint.textContent = 'Informe ao menos o nome do outorgante para gerar o documento.';
+      validationHint.classList.add('warn');
+    } else {
+      validationHint.textContent = '';
+      validationHint.classList.remove('warn');
+    }
+  }
+
+  /* ---------------- PDF generation ---------------- */
+
+  function getFontStyle(bold, italic) {
+    if (bold && italic) return 'bolditalic';
+    if (bold) return 'bold';
+    if (italic) return 'italic';
+    return 'normal';
+  }
+
+  // jsPDF's getTextWidth() applies kerning-pair adjustments for certain
+  // letter/punctuation combinations (e.g. "P,") when measuring a whole
+  // string, but doc.text() does not apply that same kerning when actually
+  // drawing separate strings side by side. Measuring word width as the sum
+  // of each character's width avoids that mismatch, so our own manual
+  // word-by-word layout lines up with what actually gets drawn.
+  function measureWidth(doc, text) {
+    var total = 0;
+    for (var i = 0; i < text.length; i++) {
+      total += doc.getTextWidth(text[i]);
+    }
+    return total;
+  }
+
+  function tokenizeRuns(runs) {
+    var fullText = '';
+    var styleMap = [];
+    runs.forEach(function (run) {
+      var start = fullText.length;
+      fullText += run.text;
+      for (var i = start; i < fullText.length; i++) {
+        styleMap[i] = { bold: !!run.bold, italic: !!run.italic };
+      }
+    });
+    var words = [];
+    var i = 0;
+    while (i < fullText.length) {
+      while (i < fullText.length && /\s/.test(fullText[i])) i++;
+      if (i >= fullText.length) break;
+      var start2 = i;
+      while (i < fullText.length && !/\s/.test(fullText[i])) i++;
+      var wordText = fullText.slice(start2, i);
+      var style = styleMap[start2];
+      words.push({ word: wordText, bold: style.bold, italic: style.italic });
+    }
+    return words;
+  }
+
+  function wrapWords(doc, words, maxWidth, fontSize) {
+    doc.setFontSize(fontSize);
+    var lines = [];
+    var current = [];
+    var currentWidth = 0;
+    words.forEach(function (w) {
+      doc.setFont('times', getFontStyle(w.bold, w.italic));
+      var wWidth = measureWidth(doc, w.word);
+      var sp = current.length > 0 ? doc.getTextWidth(' ') : 0;
+      if (currentWidth + sp + wWidth > maxWidth && current.length > 0) {
+        lines.push({ words: current, width: currentWidth });
+        current = [];
+        currentWidth = 0;
+      }
+      if (current.length > 0) currentWidth += doc.getTextWidth(' ');
+      var wc = { word: w.word, bold: w.bold, italic: w.italic, width: wWidth };
+      current.push(wc);
+      currentWidth += wWidth;
+    });
+    if (current.length) lines.push({ words: current, width: currentWidth });
+    return lines;
+  }
+
+  function renderParagraphPdf(doc, runs, x, y, maxWidth, fontSize, lineHeight, opts) {
+    opts = opts || {};
+    var align = opts.align || 'justify';
+    var words = tokenizeRuns(runs);
+    var lines = wrapWords(doc, words, maxWidth, fontSize);
+    doc.setFontSize(fontSize);
+    lines.forEach(function (line, idx) {
+      if (opts.pageBottom && y > opts.pageBottom) {
+        doc.addPage();
+        y = opts.pageTop || 25;
+      }
+      var isLast = idx === lines.length - 1;
+      var totalWordsWidth = line.words.reduce(function (s, w) { return s + w.width; }, 0);
+      var gaps = line.words.length - 1;
+      var spaceW = doc.getTextWidth(' ');
+      var cursorX = x;
+
+      if (align === 'justify' && !isLast && gaps > 0) {
+        spaceW = (maxWidth - totalWordsWidth) / gaps;
+      } else if (align === 'center') {
+        var naturalWidth = totalWordsWidth + spaceW * gaps;
+        cursorX = x + (maxWidth - naturalWidth) / 2;
+      }
+
+      line.words.forEach(function (w, wi) {
+        doc.setFont('times', getFontStyle(w.bold, w.italic));
+        doc.text(w.word, cursorX, y);
+        cursorX += w.width + (wi < line.words.length - 1 ? spaceW : 0);
+      });
+      y += lineHeight;
+    });
+    return y;
+  }
+
+  function generatePdf() {
+    if (!window.jspdf) {
+      alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão com a internet e tente novamente.');
+      return;
+    }
+    var data = getData();
+    var jsPDFCtor = window.jspdf.jsPDF;
+    var doc = new jsPDFCtor({ unit: 'mm', format: 'a4' });
+
+    var marginX = 25;
+    var pageWidth = 210;
+    var pageHeight = 297;
+    var maxWidth = pageWidth - marginX * 2;
+    var pageBottom = pageHeight - 30;
+    var pageTop = 30;
+    var y = 32;
+
+    doc.setFont('times', 'bold');
+    doc.setFontSize(15);
+    doc.text('PROCURAÇÃO', pageWidth / 2, y, { align: 'center' });
+    y += 8;
+
+    doc.setFont('times', 'italic');
+    doc.setFontSize(11);
+    doc.text('"ad et extra judicia"', pageWidth / 2, y, { align: 'center' });
+    y += 12;
+
+    y = renderParagraphPdf(doc, buildOutorganteRuns(data), marginX, y, maxWidth, 11, 6, { align: 'justify', pageBottom: pageBottom, pageTop: pageTop });
+    y += 8;
+    y = renderParagraphPdf(doc, buildOutorgadoRuns(), marginX, y, maxWidth, 11, 6, { align: 'justify', pageBottom: pageBottom, pageTop: pageTop });
+    y += 8;
+    y = renderParagraphPdf(doc, buildPoderesRuns(), marginX, y, maxWidth, 11, 6, { align: 'justify', pageBottom: pageBottom, pageTop: pageTop });
+    y += 16;
+
+    y = renderParagraphPdf(doc, buildLocalDataRuns(data), marginX, y, maxWidth, 11, 6, { align: 'center', pageBottom: pageBottom, pageTop: pageTop });
+    y += 26;
+
+    if (y > pageBottom - 30) { doc.addPage(); y = pageTop; }
+
+    y = renderParagraphPdf(doc, [{ text: '____________________________________________', bold: true }], marginX, y, maxWidth, 11, 6, { align: 'center' });
+    y += 1;
+    y = renderParagraphPdf(doc, buildSignatureNomeRuns(data), marginX, y, maxWidth, 11, 6, { align: 'center' });
+    y += 1;
+    y = renderParagraphPdf(doc, buildSignatureCpfRuns(data), marginX, y, maxWidth, 11, 6, { align: 'center' });
+
+    // Footnote, anchored near the bottom of the last page
+    var footY = pageHeight - 32;
+    doc.setDrawColor(200, 195, 180);
+    doc.line(marginX, footY - 6, pageWidth - marginX, footY - 6);
+    renderParagraphPdf(doc, [{ text: FOOTNOTE_TEXTO, bold: false, italic: true }], marginX, footY, maxWidth, 8, 3.6, { align: 'justify' });
+
+    var nome = (data.nome || '').trim();
+    var filename = 'procuracao' + (nome ? '_' + nome.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') : '') + '.pdf';
+    doc.save(filename);
+  }
+
+  /* ---------------- Quick fill (date/place) ---------------- */
+
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+  function quickFillDate() {
+    var now = new Date();
+    inputs.local.value = 'Macatuba/SP';
+    inputs.dia.value = String(now.getDate());
+    inputs.mes.value = MESES[now.getMonth()];
+    inputs.ano.value = String(now.getFullYear());
+    onChange();
+  }
+
+  /* ---------------- Wiring ---------------- */
+
+  function onChange() {
+    saveDraft();
+    renderPreview();
+    updateValidation();
+  }
+
+  FIELD_IDS.forEach(function (id) {
+    inputs[id].addEventListener('input', onChange);
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', generatePdf);
+  document.getElementById('quickfillDate').addEventListener('click', quickFillDate);
+  document.getElementById('addFieldBtn').addEventListener('click', function () { addCustomField(); });
+  document.getElementById('clearBtn').addEventListener('click', function () {
+    if (!confirm('Limpar todos os campos do formulário?')) return;
+    FIELD_IDS.forEach(function (id) { inputs[id].value = ''; });
+    inputs.genero.value = 'feminino';
+    customFields = [];
+    renderCustomFields();
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    renderPreview();
+    updateValidation();
+  });
+
+  // Mobile tabs
+  var tabFormBtn = document.getElementById('tabFormBtn');
+  var tabPreviewBtn = document.getElementById('tabPreviewBtn');
+  var panelForm = document.getElementById('panelForm');
+  var panelPreview = document.getElementById('panelPreview');
+  tabFormBtn.addEventListener('click', function () {
+    tabFormBtn.classList.add('active');
+    tabPreviewBtn.classList.remove('active');
+    panelForm.classList.add('show');
+    panelPreview.classList.remove('show');
+  });
+  tabPreviewBtn.addEventListener('click', function () {
+    tabPreviewBtn.classList.add('active');
+    tabFormBtn.classList.remove('active');
+    panelPreview.classList.add('show');
+    panelForm.classList.remove('show');
+  });
+
+  // Init
+  loadDraft();
+  renderPreview();
+  updateValidation();
+})();
+</script>
+</body>
+</html>
